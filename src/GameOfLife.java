@@ -6,7 +6,6 @@ public class GameOfLife {
         int HEIGHT = 0;
         int SPEED = 0;
         int GENERATIONS = 0;
-        boolean run = false;
         String pattern = "RND";
 
         for (String arg:args){
@@ -28,20 +27,19 @@ public class GameOfLife {
                 }
             }
         }
-        if (validateValues(WIDTH, HEIGHT, SPEED, GENERATIONS, pattern)) run = true;
+        validateValues(WIDTH, HEIGHT, SPEED, GENERATIONS, pattern);
         boolean[][] board = createBoard(WIDTH, HEIGHT);
         fillBoard(board, pattern);
-        runGame(board, run, GENERATIONS, SPEED);
+        runGame(board, GENERATIONS, SPEED);
     }
 
-    private static void runGame(boolean[][] board, boolean run, int GENERATIONS, int SPEED){
+    private static void runGame(boolean[][] board, int GENERATIONS, int SPEED){
         int gen = 1;
-        if(GENERATIONS >= 0){
-            run = true;
-        }
+        boolean run = true;
         while (run) {
             System.out.println("Generación: " + gen);
             printBoard(board);
+            board = updateBoard(board);
             gen++;
 
             try {
@@ -92,36 +90,86 @@ public class GameOfLife {
     }
 
     public static void printBoard(boolean[][] board){
-        for (boolean[] booleans : board) {
-            for (int col = 0; col < board[0].length; col++) {
-                char cellChar = booleans[col] ? '0' : 'X';
+        for (boolean[] row : board) {
+            for (boolean cell : row) {
+                char cellChar = cell ?  '0' : 'X';
                 System.out.print(cellChar + " ");
             }
             System.out.println();
         }
     }
 
-    private static boolean validateValues(int WIDTH, int HEIGHT, int SPEED, int GENERATIONS, String pattern){
+    private static boolean[][] updateBoard(boolean[][] board) {
+        int rows = board.length;
+        int cols = board[0].length;
+        boolean[][] newBoard = new boolean[rows][cols];
+
+        //Reglas:
+        //Regla 1: Viva con < 2 vecinos vivos muere
+        //Regla 2: Viva con > 4 vecinos vivos muere
+        //Regla 3: Viva con 3 vecinos vivos sobrevive (No hace nada)
+        //Regla 4: Muerta con 3 vecinos vivos nace
+
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                int liveNeighbors = countLiveNeighbors(board, row, col);
+
+                if (board[row][col]) {
+                    // Reglas 1 y 2
+                    newBoard[row][col] = liveNeighbors == 2 || liveNeighbors == 3;
+                } else {
+                    // Regla 4
+                    newBoard[row][col] = liveNeighbors == 3;
+                }
+            }
+        }
+
+        return newBoard;
+    }
+
+    private static int countLiveNeighbors(boolean[][] board, int row, int col) {
+        int count = 0;
+        int rows = board.length;
+        int cols = board[0].length;
+
+        for (int x = -1; x <= 1; x++) {
+            for (int z = -1; z <= 1; z++) {
+                if (x == 0 && z == 0){
+                    continue;
+                }
+                int neighborRow = row + x;
+                int neighborCol = col + z;
+
+                if (neighborRow >= 0 && neighborRow < rows && neighborCol >= 0 && neighborCol < cols) {
+                    if (board[neighborRow][neighborCol] && !(x == 0 && z == 0)) {
+                        count++;
+                    }
+                }
+            }
+        }
+
+        return count;
+    }
+
+    private static void validateValues(int WIDTH, int HEIGHT, int SPEED, int GENERATIONS, String pattern){
         if (!(WIDTH == 10 || WIDTH == 20 || WIDTH == 40 || WIDTH == 80)){
             System.out.println("Valor ancho no valido");
-            return false;
+            return;
         }
         if (!(HEIGHT == 10 || HEIGHT == 20 || HEIGHT == 40)){
             System.out.println("Valor de altura no valido");
-            return false;
+            return;
         }
         if (SPEED < 250 || SPEED > 1000){
             System.out.println("Valor de velocidad no valido");
-            return false;
+            return;
         }
         if (GENERATIONS < 0){
             System.out.println("Valor de generaciones no valido");
-            return false;
+            return;
         }
         if (!(pattern.equals("RND") || pattern.matches("[01#]+"))){
             System.out.println("Valores de patrón invalidos");
-            return false;
         }
-        return true;
     }
 }
